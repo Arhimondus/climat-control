@@ -1,0 +1,24 @@
+<!DOCTYPE>
+<html>
+<head>
+<script src="vue.js"></script>
+</head>
+<body>
+<div id="app">
+[[ {{ x }} ]]
+<pre v-html="data"></pre>
+</div>
+<script>
+var fs = require('fs');
+var data = fs.readFileSync('data/data_loss.csv', 'utf-8');
+
+var application = new Vue({
+	data: {
+		x: 5,
+		data,
+	},
+});
+application.$mount("#app");
+</script>
+</body>
+</html>
