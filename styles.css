@@ -2,12 +2,21 @@
 	box-sizing: border-box;
 }
 
-html, body {
-	background-color: black;
+html {
 	width: 100%;
 	height: 100%;
+}
+
+html, body {
+	background-color: black;
 	padding: 0;
 	margin: 0;
+}
+
+body {
+	padding: 2px;
+	width: calc(100% - 8px);
+	height: calc(100% - 8px);
 }
 
 .outer {
@@ -16,20 +25,37 @@ html, body {
 
 .climat-control-placeholder {
 	width: 100%;
-	height: calc(100% - 120px);
+	height: calc(100% - 125px);
 	font-size: 14px;
 	line-height: 1.2em;
 	position: relative;
 }
 
-header {
-	background-image: url('icon.svg');
-	background-size: contain;
-	background-repeat: no-repeat;
-	padding-left: 30px;
-	color: white;
-	font-family: Courier;
-	font-size: 24px;
+.header {
+	overflow: auto;
+	display: grid;
+	grid-template-rows: 40px;
+	grid-template-columns: auto 150px;
+}
+
+.title {
+    color: white;
+    font-family: Courier;
+    font-size: 24px;
+    background-color: #35a9b3;
+    padding: 5px 2px 5px 5px;
+	box-shadow: 2px 3px 0px 0px rgba(214, 55, 55, 0.75);
+	grid-row: 1;
+	grid-column: 1;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	height: 35px;
+}
+
+.title__icon {
+	height: 24px;
+	margin-top: -1px;
 }
 
 .errors {
@@ -44,4 +70,60 @@ header {
 .error__rows {
 	list-style: square;
 	margin: 0;
+}
+
+.fire, .water {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+	padding-left: 20px;
+	/* color: black; */
+}
+
+.fire button, .water button {
+	width: 12px;
+	height: 12px;
+	padding: 2px;
+	/* color: black; */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.fire {
+	background-image: url("fire.svg");
+}
+
+.water {
+	background-image: url("water.svg");
+}
+
+.changer {
+	margin-left: 10px;
+	grid-row: 1;
+	grid-column: 2;
+	background-color: #778e6b;
+	color: white;
+	box-shadow: -2px 3px 0px 0px rgba(214, 55, 55, 0.75);
+	height: 35px;
+	color: white;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-around;
+}
+
+.plus, .minus {
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.plus {
+	background-image: url("plus.png");
+}
+
+.minus {
+	background-image: url("minus.png");
 }

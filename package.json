@@ -2,7 +2,9 @@
 	"name": "climat-control",
 	"main": "index.html",
 	"window": {
-	"title": "Климат Контроль Делюкс",
-		"icon": "icon.ico"
+		"title": "Климат Контроль Делюкс",
+		"icon": "icon.ico",
+		"min_width": 800,
+		"min_height": 600
 	}
 }

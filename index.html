@@ -11,7 +11,10 @@
 </head>
 <body>
 <div id="app">
-	<header>Климат Контроль Делюкс {{ message }}</header>
+	<div class="header">
+		<header class="title"><img class="title__icon" src="icon.svg"/>Климат Контроль Делюкс</header>
+		<div class="changer"><div class="fire"><button class="minus" @click="client_temperature--"></button>{{ client_temperature }}<button class="plus" @click="client_temperature++"></button></div> <div class="water"><button class="minus" @click="client_humidity--"></button>{{ client_humidity }}<button class="plus" @click="client_humidity++"></button></div></div>
+	</div>
 	<div class="outer">
 		<div id="placeholder" class="climat-control-placeholder"></div>
 	</div>
@@ -35,6 +38,10 @@ var application = new Vue({
 		data: 5,
 		message: '',
 		errors: [{ title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }],
+		client_temperature: 15,
+		client_humidity: 50,
+		inner_temperature: 20,
+		inner_humidity: 60,
 	},
 });
 application.$mount("#app");
