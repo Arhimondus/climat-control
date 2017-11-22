@@ -1,4 +1,8 @@
 {
 	"name": "climat-control",
-	"main": "index.html"
+	"main": "index.html",
+	"window": {
+	"title": "Климат Контроль Делюкс",
+		"icon": "icon.ico"
+	}
 }

@@ -1,0 +1,47 @@
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+	background-color: black;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+.outer {
+	position: relative;
+}
+
+.climat-control-placeholder {
+	width: 100%;
+	height: calc(100% - 120px);
+	font-size: 14px;
+	line-height: 1.2em;
+	position: relative;
+}
+
+header {
+	background-image: url('icon.svg');
+	background-size: contain;
+	background-repeat: no-repeat;
+	padding-left: 30px;
+	color: white;
+	font-family: Courier;
+	font-size: 24px;
+}
+
+.errors {
+	border: 2px dashed white;
+	border-radius: 5px;
+	color: white;
+	padding: 7px;
+	height: 92px;
+	overflow: auto;
+}
+
+.error__rows {
+	list-style: square;
+	margin: 0;
+}
