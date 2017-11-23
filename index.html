@@ -12,7 +12,7 @@
 <body>
 <div id="app">
 	<div class="header">
-		<header class="title"><img class="title__icon" src="icon.svg"/>Климат Контроль Делюкс <select style="margin-left: 100px;" v-model="file">
+		<header class="title"><img class="title__icon" src="icon.svg"/>Климат Контроль Делюкс <button style="margin-left: 26px;" @click="show_ch_ih">влажность ch/ih</button> <select style="margin-left: 25px;" v-model="file">
 			<option value="data_loss.csv">data_loss.csv</option>
 			<option value="duplicates.csv">duplicates.csv</option>
 			<option value="it_decrease.csv">it_decrease.csv</option>
@@ -276,17 +276,58 @@ function load_file(file) {
 }
 
 function load_chart() {
-	var ct = full_data.map(m => { return [m.datetime, m.ct]; });
-	var it = full_data.map(m => { return [m.datetime, m.it]; });
+	var ct = { 
+		data: full_data.map(m => { 
+			return [m.datetime, m.ct];
+		}),
+		color: "darkblue",
+		label: "ct",
+	};
+	var it = { 
+		data: full_data.map(m => { 
+			return [m.datetime, m.it];
+		}),
+		color: "maroon",
+		label: "it",
+	};
 
 	$.plot("#placeholder", [ ct, it ], {
 		xaxis: {
 			mode: "time",
 			minTickSize: [30, "minute"],
 		},
+		legend: {
+			show: true,
+		},
 	});
 }
 
+function load_ch_ih() {
+	var ch = { 
+		data: full_data.map(m => { 
+			return [m.datetime, m.ch];
+		}),
+		color: "darkgray",
+		label: "ch",
+	};
+	var ih = { 
+		data: full_data.map(m => { 
+			return [m.datetime, m.ih];
+		}),
+		color: "darkgreen",
+		label: "ih",
+	};
+
+	$.plot("#placeholder", [ ch, ih ], {
+		xaxis: {
+			mode: "time",
+			minTickSize: [30, "minute"],
+		},
+		legend: {
+			show: true,
+		},
+	});
+}
 
 var application = new Vue({
 	data: {
@@ -306,7 +347,16 @@ var application = new Vue({
 	},
 	filters: {
 		r(row) {
-			return (row.datetime.getYear() + 1900) + '' + (row.datetime.getMonth() + 1) + '' + row.datetime.getDate() + "-" + row.ct + ";" + row.it + ";" + row.ot + ";" + row.ch + ";" + row.ih + ";" + row.oh;
+			var hours = row.datetime.getHours();
+			if(hours < 10) hours = '0' + hours;
+			
+			var minutes = row.datetime.getMinutes();
+			if(minutes < 10) minutes = '0' + minutes;
+			
+			var seconds = row.datetime.getSeconds();
+			if(seconds < 10) seconds = '0' + seconds;
+			
+			return (row.datetime.getYear() + 1900) + '' + (row.datetime.getMonth() + 1) + '' + row.datetime.getDate() + "-" + hours + ":" + minutes + ":" + seconds + ";" + row.ct + ";" + row.it + ";" + row.ot + ";" + row.ch + ";" + row.ih + ";" + row.oh;
 		},
 	},
 	methods: {
@@ -330,6 +380,9 @@ var application = new Vue({
 			this.client_temperature--;
 			if(this.client_temperature > 30) this.client_temperature = 30;
 			if(this.client_temperature < 15) this.client_temperature = 15;
+		},
+		show_ch_ih() {
+			load_ch_ih();
 		},
 	},
 	watch: {
