@@ -12,73 +12,336 @@
 <body>
 <div id="app">
 	<div class="header">
-		<header class="title"><img class="title__icon" src="icon.svg"/>Климат Контроль Делюкс</header>
-		<div class="changer"><div class="fire"><button class="minus" @click="client_temperature--"></button>{{ client_temperature }}<button class="plus" @click="client_temperature++"></button></div> <div class="water"><button class="minus" @click="client_humidity--"></button>{{ client_humidity }}<button class="plus" @click="client_humidity++"></button></div></div>
+		<header class="title"><img class="title__icon" src="icon.svg"/>Климат Контроль Делюкс <select style="margin-left: 100px;" v-model="file">
+			<option value="data_loss.csv">data_loss.csv</option>
+			<option value="duplicates.csv">duplicates.csv</option>
+			<option value="it_decrease.csv">it_decrease.csv</option>
+			<option value="shuffled.csv">shuffled.csv</option>
+			<option value="steady.csv">steady.csv</option>
+			<option value="zigzag.csv">zigzag.csv</option>
+		</select></header>
+		<div class="changer"><div class="fire"><button class="minus" @click="dec_temperature"></button>{{ client_temperature }}<button class="plus" @click="inc_temperature"></button></div> <div class="water"><button class="minus" @click="client_humidity--"></button>{{ client_humidity }}<button class="plus" @click="client_humidity++"></button></div></div>
 	</div>
 	<div class="outer">
 		<div id="placeholder" class="climat-control-placeholder"></div>
 	</div>
 	<div class="errors">
-		<div class="error" v-for="error in errors">
-			<div class="error__title">{{ error.title }}</div>
-			<ul class="error__rows">
-				<li class="error_row" v-for="row in error.rows">{{ row }}</li>
-			</ul>
+		<div class="error">
+			<header class="error__title">Some data is shuffled:</header>
+			<div class="error__row" v-for="res in shuffleErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
+		</div>
+		<div class="error">
+			<header class="error__title">Some data is lost:</header>
+			<div class="error__row" v-for="res in lostDataErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
+		</div>
+		
+		<div class="error">
+			<header class="error__title">Some records are duplicated:</header>
+			<div class="error__row" v-for="res in duplicateErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
+		</div>
+		
+		
+		<div class="error">
+			<header class="error__title">Inner temperature is changing for no reason:</header>
+			<div class="error__row" v-for="res in noReasonErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
+		</div>
+		<div class="error">
+			<header class="error__title">Some data with too fast changes:</header>
+			<div class="error__row" v-for="res in fastChangeErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
+		</div>
+		<div class="error">
+			<header class="error__title">Some data with unexpected vibration changes:</header>
+			<div class="error__row" v-for="res in vibrationErrors">
+				<ul>
+					<li v-for="row in res">{{ row | r }}</li>
+				</ul>
+			</div>
 		</div>
 	</div>
 </div>
 <script>
 var fs = require('fs');
-var raw_data = fs.readFileSync('data/it_decrease.csv', 'utf-8');
 
-var full_data = raw_data.split("\n").filter((f,index) => index!=0).map(el => el.split(";")).map(el => ({datetime: new Date(el[0].slice(0,4) + "-" + el[0].slice(4,6) + "-" + el[0].slice(6,8) + "T" + el[0].slice(9,17)), ct: el[1]-0, it: el[2]-0, ot: el[3]-0, ch:el[4]-0, ih: el[5]-0, oh: el[6]-0}));
+lostDataErrors = [];
+shuffleErrors = [];
+duplicateErrors = [];
+noReasonErrors = [];
+fastChangeErrors = [];
+vibrationErrors = [];
+	
+function load_file(file) {
+	var raw_data = fs.readFileSync('data/' + file, 'utf-8');
+	full_data = raw_data.split("\n").filter((f,index) => index!=0 && f !== "").map(el => el.split(";")).map(el => ({datetime: new Date(el[0].slice(0,4) + "-" + el[0].slice(4,6) + "-" + el[0].slice(6,8) + "T" + el[0].slice(9,17)), ct: el[1]-0, it: el[2]-0, ot: el[3]-0, ch:el[4]-0, ih: el[5]-0, oh: el[6]-0}));
+
+	lostDataErrors = [];
+	shuffleErrors = [];
+	duplicateErrors = [];
+	noReasonErrors = [];
+	fastChangeErrors = [];
+	vibrationErrors = [];
+
+	var err;
+
+	function* getElementsFromRange(arr, from, to) {
+		for(var i = from; i <= to; i++)
+			yield arr[i];
+	}
+
+	function searchNext(arr, datetime){
+		for(var i = 0; i < arr.length; i++){
+			if(arr[i].datetime - datetime == 1000) return i;
+		}
+		err = lostDataErrors;
+		return -1;
+	}
+
+	function searchMaxPositionUntil(arr, from, to){
+		var max = to;
+		for(var i = arr[from].datetime; i < arr[to].datetime; i -= -1000){
+			var position = searchNext(arr, i);
+			if(position > max)
+				max = position;
+		}
+		return max;
+	}
+
+	function searchShuffleOrLostData(arr){
+		err = shuffleErrors;
+		for(var i = 1; i < arr.length; i++){
+			if(arr[i].datetime - arr[i-1].datetime !== 1000 && arr[i].datetime - arr[i-1].datetime !== 0){
+				var max = searchMaxPositionUntil(arr, i-1, i) + 1;
+				if(err !== lostDataErrors)
+					err.push([...getElementsFromRange(arr, i-1, max)]);
+				else
+					err.push([...getElementsFromRange(arr, i-1, max-1)]);
+				i = max;
+			}
+		}
+	}
+
+	function searchDuplicates(arr) {
+		err = duplicateErrors;
+		let temp = {};
+		arr.forEach((el, index) => {
+			if(temp[el.datetime-0]) temp[el.datetime-0].count++;
+			else temp[el.datetime-0] = { count: 1, index: index };
+		});
+		for(var key_datetime in temp) {
+			let a = [];
+			let el = temp[key_datetime-0];
+			if(el.count > 1) {
+				for(var i = 0; i < el.count; i++)
+					a.push(arr[el.index]);
+				err.push(a);
+			}
+		}
+	}
+
+	function itDecrease(arr){
+		err = noReasonErrors;
+		var a = [];
+		for(var i = 1; i < arr.length; i++){
+			if(arr[i].ct - arr[i-1].ct <= 0 && (arr[i].it - arr[i-1].it <= 0 && arr[i].ct > arr[i].it || arr[i].it - arr[i-1].it >=0 && arr[i].ct < arr[i].it) || arr[i].ct - arr[i-1].ct >= 0 && (arr[i].it - arr[i-1].it >= 0 && arr[i].ct < arr[i].it || arr[i].it - arr[i-1].it <= 0 && arr[i].ct > arr[i].it)){
+				while(arr[i].ct !== arr[i].it && i+1 < arr.length){
+					a.push(arr[i-1]);
+					i++;
+				}
+				a.push(arr[i]);
+				err.push(a);
+				a = [];
+			}
+		}
+		for(var i = 1; i < arr.length; i++){
+			if(arr[i].ch - arr[i-1].ch <= 0 && (arr[i].ih - arr[i-1].ih <= 0 && arr[i].ch > arr[i].ih || arr[i].ih - arr[i-1].ih >=0 && arr[i].ch < arr[i].ih) || arr[i].ch - arr[i-1].ch >= 0 && (arr[i].ih - arr[i-1].ih >= 0 && arr[i].ch < arr[i].ih || arr[i].ih - arr[i-1].ih <= 0 && arr[i].ch > arr[i].ih)){
+				while(arr[i].ch !== arr[i].ih && i+1 < arr.length){
+					a.push(arr[i-1]);
+					i++;
+				}
+				a.push(arr[i]);
+				err.push(a);
+				a = [];
+			}
+		}
+	}
+
+	function fastChange(arr){
+		err = fastChangeErrors;
+		for(var i = 0; i < arr.length - 600; i++){
+			var next_step_to = (i + 599) >= arr.length ? arr.length : i + 599;
+			var mass = arr.slice(i, next_step_to + 1);
+			var min_of_mass_ot = mass[0].ot;
+			var min_of_mass_ot_pos = 0;
+			var max_of_mass_ot_pos = 0;
+			for(var j = 1; j < mass.length; j++){
+				if(min_of_mass_ot > mass[j].ot){
+					min_of_mass_ot = mass[j].ot;
+					min_of_mass_ot_pos = j;
+				}
+				if(mass[j].ot - min_of_mass_ot > 5){
+					max_of_mass_ot_pos = j;
+					err.push(mass.slice(max_of_mass_ot_pos > min_of_mass_ot_pos ? min_of_mass_ot_pos : max_of_mass_ot_pos, max_of_mass_ot_pos > min_of_mass_ot_pos ? max_of_mass_ot_pos + 1 : min_of_mass_ot_pos + 1));
+					break;
+				}
+			}
+			i += max_of_mass_ot_pos > min_of_mass_ot_pos ? max_of_mass_ot_pos : min_of_mass_ot_pos;
+		}
+
+		for(var i = 0; i < arr.length - 600; i++){
+			var next_step_to = (i + 599) >= arr.length ? arr.length : i + 599;
+			var mass = arr.slice(i, next_step_to + 1);
+			var min_of_mass_oh = mass[0].oh;
+			var min_of_mass_oh_pos = 0;
+			var max_of_mass_oh_pos = 0;
+			for(var j = 1; j < mass.length; j++){
+				if(min_of_mass_oh > mass[j].oh){
+					min_of_mass_oh = mass[j].oh;
+					min_of_mass_oh_pos = j;
+				}
+				if(mass[j].oh - min_of_mass_oh > 5){
+					max_of_mass_oh_pos = j;
+					err.push(mass.slice(max_of_mass_oh_pos > min_of_mass_oh_pos ? min_of_mass_oh_pos : max_of_mass_oh_pos, max_of_mass_oh_pos > min_of_mass_oh_pos ? max_of_mass_oh_pos + 1 : min_of_mass_oh_pos + 1));
+					break;
+				}
+			}
+			i += max_of_mass_oh_pos > min_of_mass_oh_pos ? max_of_mass_oh_pos : min_of_mass_oh_pos;
+		}
+	}
+
+	function vibration(arr){
+		err = vibrationErrors;
+		var a = [];
+		var max = -1;
+		for(var i = 1; i < arr.length; i++){
+			while(Math.abs(arr[i-1].it - arr[i].it) > 1){
+				a.push(arr[i-1]);
+				max = i;
+				i++;
+			}
+			if(max !== -1){
+				a.push(arr[max]);
+				err.push(a);
+				max = -1;
+				a = [];
+			}
+		}
+		for(var i = 1; i < arr.length; i++){
+			while(Math.abs(arr[i-1].ih - arr[i].ih) > 1){
+				a.push(arr[i-1]);
+				max = i;
+				i++;
+			}
+			if(max !== -1){
+				a.push(arr[max]);
+				err.push(a);
+				max = -1;
+				a = [];
+			}
+		}
+	}
+
+	console.log(full_data);
+
+	searchShuffleOrLostData(full_data);
+	searchDuplicates(full_data);
+	itDecrease(full_data);
+	fastChange(full_data);
+	vibration(full_data);
+
+	console.log('shuffleErrors', shuffleErrors);
+	console.log('lostDataErrors', lostDataErrors);
+	console.log('duplicateErrors', duplicateErrors);
+	console.log('noReasonErrors', noReasonErrors);
+	console.log('fastChangeErrors', fastChangeErrors);
+	console.log('vibration', vibrationErrors);
+}
+
+function load_chart() {
+	var ct = full_data.map(m => { return [m.datetime, m.ct]; });
+	var it = full_data.map(m => { return [m.datetime, m.it]; });
+
+	$.plot("#placeholder", [ ct, it ], {
+		xaxis: {
+			mode: "time",
+			minTickSize: [30, "minute"],
+		},
+	});
+}
+
 
 var application = new Vue({
 	data: {
 		data: 5,
 		message: '',
-		errors: [{ title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }, { title: "Жестокая ошибка", rows: ["123213-1", "124242-2"] }],
-		client_temperature: 15,
+		client_temperature: 30,
 		client_humidity: 50,
-		inner_temperature: 20,
+		inner_temperature: 30,
 		inner_humidity: 60,
+		shuffleErrors,
+		lostDataErrors,
+		duplicateErrors,
+		noReasonErrors,
+		fastChangeErrors,
+		vibrationErrors,
+		file: "duplicates.csv",
+	},
+	filters: {
+		r(row) {
+			return (row.datetime.getYear() + 1900) + '' + (row.datetime.getMonth() + 1) + '' + row.datetime.getDate() + "-" + row.ct + ";" + row.it + ";" + row.ot + ";" + row.ch + ";" + row.ih + ";" + row.oh;
+		},
+	},
+	methods: {
+		refresh() {
+			load_file(this.file);
+			load_chart();
+			
+			this.shuffleErrors = shuffleErrors;
+			this.lostDataErrors = lostDataErrors;
+			this.duplicateErrors = duplicateErrors;
+			this.noReasonErrors = noReasonErrors;
+			this.fastChangeErrors = fastChangeErrors;
+			this.vibrationErrors = vibrationErrors;
+		},
+		inc_temperature() {
+			this.client_temperature++;
+			if(this.client_temperature > 30) this.client_temperature = 30;
+			if(this.client_temperature < 15) this.client_temperature = 15;
+		},
+		dec_temperature() {
+			this.client_temperature--;
+			if(this.client_temperature > 30) this.client_temperature = 30;
+			if(this.client_temperature < 15) this.client_temperature = 15;
+		},
+	},
+	watch: {
+		file() {
+			this.refresh();
+		},
+	},
+	mounted() {
+		this.refresh();
 	},
 });
 application.$mount("#app");
-
-/*var d1 = [];
-for (var i = 0; i < 14; i += 0.5) {
-	d1.push([i, Math.sin(i)]);
-}*/
-
-//var ct = [full_data.map(m => { return [m.datetime, m.ct]; })];
-//var it = [full_data.map(m => { return [m.datetime, m.it]; })];
-
-var ct = full_data.map(m => { return [m.datetime, m.ct]; });
-var it = full_data.map(m => { return [m.datetime, m.it]; });
-
-console.log(ct);
-console.log(it);
-
-// A null signifies separate line segments
-
-//var d3 = [[0, 12], [7, 12], null, [7, 2.5], [12, 2.5]];
-
-$.plot("#placeholder", [ ct, it ], {
-	xaxis: {
-		mode: "time",
-		minTickSize: [30, "minute"],
-		/*min: (new Date(1999, 11, 31)).getTime(),
-		max: (new Date(2017, 0, 1)).getTime(),*/
-		//twelveHourClock: true
-	},
-});
-
-// $("#placeholder").resize(function () {
-	// application.message = "Placeholder is now "
-		// + $(this).width() + "x" + $(this).height()
-		// + " pixels";
-// });
 </script>
 </body>
 </html>

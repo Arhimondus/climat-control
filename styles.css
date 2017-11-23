@@ -25,7 +25,7 @@ body {
 
 .climat-control-placeholder {
 	width: 100%;
-	height: calc(100% - 125px);
+	height: calc(100% - 183px);
 	font-size: 14px;
 	line-height: 1.2em;
 	position: relative;
@@ -63,8 +63,9 @@ body {
 	border-radius: 5px;
 	color: white;
 	padding: 7px;
-	height: 92px;
+	height: 150px;
 	overflow: auto;
+	display: flex;
 }
 
 .error__rows {
@@ -126,4 +127,21 @@ body {
 
 .minus {
 	background-image: url("minus.png");
+}
+
+.error {
+	width: 16.6%;
+}
+
+.error__row {
+	font-size: 10px;
+}
+
+.error__row  ul {
+	list-style: none;
+	padding: 0;
+}
+
+.error__title {
+	font-size: 12px;
 }
